@@ -1,4 +1,4 @@
-package com.example.navigator_5d
+package com.example.navigator_5b
 
 import io.flutter.embedding.android.FlutterActivity
 

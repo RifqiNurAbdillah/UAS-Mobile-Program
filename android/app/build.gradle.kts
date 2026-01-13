@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.navigator_5e"
+    namespace = "com.example.navigator_5b"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -22,7 +22,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.navigator_5e"
+        applicationId = "com.example.navigator_5b"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
