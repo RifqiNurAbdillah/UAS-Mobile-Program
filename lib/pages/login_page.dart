@@ -68,7 +68,6 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Tambahkan Icon/Logo dengan penanganan error agar emulator tidak hang
               Image.asset(
                 'assets/images/upgris.png',
                 height: 100,
@@ -78,7 +77,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 30),
 
-              // Perbaikan TextField Username agar garis atas tidak hilang
               TextField(
                 controller: usernameController,
                 decoration: const InputDecoration(
