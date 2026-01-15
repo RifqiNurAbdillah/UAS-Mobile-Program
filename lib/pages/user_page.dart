@@ -669,15 +669,7 @@ class _ReadBookPageState extends State<ReadBookPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.book.title),
-        actions: [
-          // Tombol opsional untuk cek status halaman
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 15),
-              child: Text("Hal: ${_pdfViewerController.pageNumber}"),
-            ),
-          ),
-        ],
+        // Bagian actions (cek status halaman) sudah dihapus
       ),
       body: widget.book.pdfPath != null
           ? SfPdfViewer.file(
@@ -690,7 +682,9 @@ class _ReadBookPageState extends State<ReadBookPage> {
               },
               // Event setiap kali halaman berubah
               onPageChanged: (PdfPageChangedDetails details) {
-                _saveLastPage(details.newPageNumber); // Simpan halaman baru
+                _saveLastPage(
+                  details.newPageNumber,
+                ); // Simpan halaman baru ke memori
               },
             )
           : const Center(child: Text('File PDF tidak tersedia')),
