@@ -243,6 +243,22 @@ class _UserPageState extends State<UserPage> {
     );
   }
 
+  // ================== NAVIGASI DETAIL ==================
+  void navigateToBookDetail(Item book) {
+    setState(() {
+      if (!history.contains(book)) {
+        history.add(book);
+      }
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BookDetailPage(book: book, bookmarks: bookmarks),
+      ),
+    );
+  }
+
   // ================= TAB PROFIL USER =================
   Widget profilTab() {
     return FutureBuilder(
@@ -410,22 +426,6 @@ class _UserPageState extends State<UserPage> {
           ],
         ),
       ],
-    );
-  }
-
-  // ================== NAVIGASI DETAIL ==================
-  void navigateToBookDetail(Item book) {
-    setState(() {
-      if (!history.contains(book)) {
-        history.add(book);
-      }
-    });
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BookDetailPage(book: book, bookmarks: bookmarks),
-      ),
     );
   }
 
