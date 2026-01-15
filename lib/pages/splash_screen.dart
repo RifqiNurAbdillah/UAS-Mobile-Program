@@ -61,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             // Icon Buku Terbuka yang modern untuk E-book
             Image.asset(
-              'assets/book_icon.png', // Ganti dengan path gambar ikon bukumu
+              'assets/images/upgris.png', // Ganti dengan path gambar ikon bukumu
               width: 120,
               height: 120,
             ),

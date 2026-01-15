@@ -161,11 +161,81 @@ class _HomePageState extends State<AdminPage> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final title = titleController.text;
-                    final author = authorController.text;
+                    final title = titleController.text.trim();
+                    final author = authorController.text.trim();
                     final year = int.tryParse(yearController.text);
-                    final desc = descController.text;
+                    final desc = descController.text.trim();
 
+                    // 1. Validasi Judul Buku
+                    if (title.isEmpty) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Data Belum Lengkap'),
+                          content: const Text(
+                            'Judul Buku wajib diisi, silahkan isi Kolom Judul atau Batal Jika Tidak Mengisi Buku.',
+                          ),
+                          actions: [
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: ElevatedButton.styleFrom(
+                                shape: const StadiumBorder(),
+                              ),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return; // Berhenti
+                    }
+
+                    // 2. Validasi PDF (E-Book)
+                    if (pickedPDF == null) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('File Belum Ada'),
+                          content: const Text(
+                            'Silakan upload file PDF (E-Book) terlebih dahulu.',
+                          ),
+                          actions: [
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: ElevatedButton.styleFrom(
+                                shape: const StadiumBorder(),
+                              ),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return; // Berhenti
+                    }
+
+                    // 3. Validasi Cover
+                    if (pickedCover == null) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Cover Kosong'),
+                          content: const Text(
+                            'Silakan pilih gambar cover untuk buku ini.',
+                          ),
+                          actions: [
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: ElevatedButton.styleFrom(
+                                shape: const StadiumBorder(),
+                              ),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return; // Berhenti
+                    }
+
+                    // Jika semua sudah terisi, baru jalankan simpan ke database
                     if (item == null) {
                       await DBHelper.instance.insertItem(
                         Item(
@@ -191,8 +261,8 @@ class _HomePageState extends State<AdminPage> {
                       );
                     }
 
-                    Navigator.pop(context);
-                    loadData();
+                    Navigator.pop(context); // Tutup form
+                    loadData(); // Refresh list
                   },
                   child: const Text('Simpan'),
                 ),

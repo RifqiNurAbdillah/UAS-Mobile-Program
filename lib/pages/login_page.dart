@@ -45,7 +45,6 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Redirect sesuai role
     if (user.role == 'admin') {
       Navigator.pushReplacement(
         context,
@@ -69,23 +68,43 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Tambahkan Icon/Logo dengan penanganan error agar emulator tidak hang
+              Image.asset(
+                'assets/images/upgris.png',
+                height: 100,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.book, size: 100, color: Colors.blue);
+                },
+              ),
+              const SizedBox(height: 30),
+
+              // Perbaikan TextField Username agar garis atas tidak hilang
               TextField(
                 controller: usernameController,
                 decoration: const InputDecoration(
                   labelText: 'Username',
+                  // floatingLabelBehavior diatur ke always agar label tidak
+                  // "memotong" garis saat fokus, atau ganti border
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
                   border: OutlineInputBorder(),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blue, width: 2.0),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
+
               TextField(
                 controller: passwordController,
                 decoration: const InputDecoration(
                   labelText: 'Password',
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -98,6 +117,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 12),
+
               TextButton(
                 onPressed: () {
                   Navigator.push(
