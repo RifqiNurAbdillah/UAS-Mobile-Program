@@ -37,6 +37,7 @@ class _HomePageState extends State<AdminPage> {
     setState(() {});
   }
 
+  // ================= FORM TAMBAH/EDIT BUKU (POP-UP) =================
   void showForm({Item? item}) {
     // ===== SET DATA AWAL =====
     if (item != null) {
@@ -297,7 +298,7 @@ class _HomePageState extends State<AdminPage> {
     }
   }
 
-  // ================= TAB HOME UI =================
+  // ================= TAB 1: DASHBOARD (DAFTAR BUKU) =================
   Widget homeTab() {
     return Stack(
       children: [
@@ -313,12 +314,17 @@ class _HomePageState extends State<AdminPage> {
           itemBuilder: (_, i) {
             final item = items[i];
             return GestureDetector(
-              onTap: () {
-                // Navigasi ke halaman Detail Buku
-                Navigator.push(
+              onTap: () async {
+                // 1. Tambahkan 'await' dan tampung hasilnya dalam variabel 'refresh'
+                final refresh = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => BookDetailPage(item: item)),
                 );
+
+                // 2. Jika hasilnya true, panggil loadData() untuk refresh daftar buku
+                if (refresh == true) {
+                  loadData();
+                }
               },
               child: Card(
                 elevation: 5,
@@ -385,39 +391,116 @@ class _HomePageState extends State<AdminPage> {
     );
   }
 
-  // ================= TAB ANGGOTA =================
+  // ================= TAB 2: MANAJEMEN ANGGOTA =================
   Widget anggotaTab() {
-    return FutureBuilder(
-      future: DBHelper.instance.database,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      // Kita langsung query table 'users'
+      future: DBHelper.instance.database.then((db) => db.query('users')),
+      builder: (context, snap) {
+        if (!snap.hasData)
           return const Center(child: CircularProgressIndicator());
-        }
-        return FutureBuilder<List<Map<String, dynamic>>>(
-          future: snapshot.data!.query('users'),
-          builder: (context, snap) {
-            if (!snap.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final users = snap.data!;
-            if (users.isEmpty) {
-              return const Center(child: Text('Belum ada anggota'));
-            }
-            return ListView.builder(
-              itemCount: users.length,
-              itemBuilder: (_, i) {
-                final u = users[i];
-                return ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(u['nama'] ?? '-'),
-                  subtitle: Text('${u['npm']} • ${u['prodi']}'),
-                  trailing: Text(u['kelas'] ?? '-'),
-                );
-              },
+        final users = snap.data!;
+        if (users.isEmpty)
+          return const Center(child: Text('Belum ada anggota'));
+
+        return ListView.builder(
+          itemCount: users.length,
+          itemBuilder: (_, i) {
+            final u = users[i];
+            final String role = u['role'] ?? 'user';
+            final int userId = u['id'];
+            final String nama = u['nama'] ?? 'Tanpa Nama';
+
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor: role == 'admin'
+                    ? Colors.red.shade100
+                    : Colors.blue.shade100,
+                child: Icon(
+                  role == 'admin' ? Icons.admin_panel_settings : Icons.person,
+                  color: role == 'admin' ? Colors.red : Colors.blue,
+                ),
+              ),
+              title: Text(nama),
+              subtitle: Text(
+                'Role: ${role.toUpperCase()} • NPM: ${u['npm'] ?? '-'}',
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Tombol Edit Role
+                  IconButton(
+                    icon: const Icon(
+                      Icons.shield_outlined,
+                      color: Colors.orange,
+                    ),
+                    onPressed: () => _showRoleDialog(userId, role, nama),
+                  ),
+                  // Tombol Hapus Akun
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () => _showDeleteUserDialog(userId, nama),
+                  ),
+                ],
+              ),
             );
           },
         );
       },
+    );
+  }
+
+  // --- Pop up Ganti Role ---
+  void _showRoleDialog(int id, String currentRole, String name) {
+    String newRole = (currentRole == 'admin') ? 'user' : 'admin';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ubah Role?'),
+        content: Text('Ubah role "$name" menjadi ${newRole.toUpperCase()}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await DBHelper.instance.updateUserRole(id, newRole);
+              Navigator.pop(context);
+              setState(() {}); // Refresh list
+            },
+            child: const Text('Ya, Ubah'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Pop up Hapus User ---
+  void _showDeleteUserDialog(int id, String name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Akun?'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus akun "$name"? Data ini akan hilang permanen.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await DBHelper.instance.deleteUser(id);
+              Navigator.pop(context);
+              setState(() {}); // Refresh list
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -641,10 +724,58 @@ class _HomePageState extends State<AdminPage> {
   }
 }
 
+// ================= HALAMAN DETAIL BUKU =================
 class BookDetailPage extends StatelessWidget {
   final Item item; // Menyimpan data buku yang akan ditampilkan
 
   const BookDetailPage({Key? key, required this.item}) : super(key: key);
+
+  // --- FUNGSI HAPUS BUKU DENGAN KONFIRMASI ---
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Buku?'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus buku "${item.title}"? Tindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          // Tombol Batal
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          // Tombol Hapus (Berwarna Merah & Melingkar)
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: const StadiumBorder(), // Membuat tombol lonjong/lingkar
+            ),
+            onPressed: () async {
+              // 1. Eksekusi hapus dari database berdasarkan ID
+              await DBHelper.instance.deleteItem(item.id!);
+
+              // 2. Tutup dialog
+              Navigator.pop(context);
+
+              // 3. Kembali ke halaman utama (AdminPage)
+              Navigator.pop(
+                context,
+                true,
+              ); // Kirim 'true' sebagai tanda data berubah
+
+              // 4. Beri notifikasi berhasil
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Buku berhasil dihapus')),
+              );
+            },
+            child: const Text('Ya, Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -652,15 +783,20 @@ class BookDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(item.title),
         actions: [
+          // TOMBOL EDIT
           IconButton(
-            icon: Icon(Icons.edit),
+            icon: const Icon(Icons.edit),
             onPressed: () {
-              // Navigasi ke halaman edit buku
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => EditBookPage(item: item)),
               );
             },
+          ),
+          // TOMBOL HAPUS
+          IconButton(
+            icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+            onPressed: () => _confirmDelete(context),
           ),
         ],
       ),
@@ -670,7 +806,7 @@ class BookDetailPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Menampilkan cover buku yang terpusat
+              // Cover Buku
               Center(
                 child: item.coverPath != null
                     ? Image.file(
@@ -678,20 +814,26 @@ class BookDetailPage extends StatelessWidget {
                         height: 200,
                         fit: BoxFit.cover,
                       )
-                    : Icon(Icons.book, size: 100, color: Colors.grey),
+                    : const Icon(Icons.book, size: 100, color: Colors.grey),
               ),
               const SizedBox(height: 16),
-              // Menampilkan detail buku
+              // Detail Teks
               Text(
                 'Judul: ${item.title}',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text('Pengarang: ${item.author ?? "Tidak Diketahui"}'),
               const SizedBox(height: 8),
               Text('Tahun Terbit: ${item.year ?? "Tidak Diketahui"}'),
               const SizedBox(height: 8),
-              Text('Deskripsi:'),
+              const Text(
+                'Deskripsi:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text(item.description),
             ],
           ),
@@ -701,8 +843,7 @@ class BookDetailPage extends StatelessWidget {
   }
 }
 
-// ... (bagian awal AdminPage dan BookDetailPage tetap sama)
-
+// ================= HALAMAN EDIT BUKU =================
 class EditBookPage extends StatefulWidget {
   final Item item;
 

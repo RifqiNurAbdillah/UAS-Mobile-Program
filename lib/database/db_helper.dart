@@ -119,6 +119,22 @@ class DBHelper {
     return null;
   }
 
+  // Hapus user berdasarkan ID
+  Future<int> deleteUser(int id) async {
+    final db = await database;
+    return await db.delete('users', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Update role user (admin <=> user)
+  Future<int> updateUserRole(int id, String newRole) async {
+    final db = await database;
+    return await db.update(
+      'users',
+      {'role': newRole},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
   // ================= CRUD ITEM =================
 
   // Insert item

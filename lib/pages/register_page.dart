@@ -106,6 +106,33 @@ class _RegisterPageState extends State<RegisterPage> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
+                // Cek apakah kolom utama kosong
+                if (username.text.isEmpty ||
+                    password.text.isEmpty ||
+                    nama.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Username, Password, dan Nama wajib diisi!',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return; // Berhenti di sini, jangan lanjut simpan ke database
+                }
+
+                // Cek apakah Dropdown sudah dipilih
+                if (selectedProdi == null || selectedKelas == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Silakan pilih Prodi dan Kelas!'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
+                // Jika semua validasi lolos, barulah simpan ke database
                 await DBHelper.instance.registerUser(
                   User(
                     username: username.text,
@@ -115,14 +142,19 @@ class _RegisterPageState extends State<RegisterPage> {
                     npm: npm.text,
                     email: email.text,
                     telepon: telepon.text,
-                    prodi: selectedProdi ?? '-',
-                    kelas: selectedKelas ?? '-',
+                    prodi: selectedProdi!,
+                    kelas: selectedKelas!,
                     jk: jk,
-                    role: 'user', // tambahkan ini
+                    role: 'user',
                   ),
                 );
 
-                Navigator.pop(context);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Registrasi Berhasil!')),
+                  );
+                  Navigator.pop(context);
+                }
               },
               child: const Text('Daftar'),
             ),
